@@ -11,24 +11,10 @@ const bcrypt = require('bcryptjs');
 function restricted(req, res, next) {
     // we'll read the username and password from headers
     // the client is responsible for setting those headers
-    const { username, password } = req.headers;
-  
-    // no point on querying the database if the headers are not present
-    if (username && password) {
-        Users.getUserBy({ username })
-            .first()
-            .then(user => {
-                if (user && bcrypt.compareSync(password, user.password)) {
-                    next();
-                } else {
-                    res.status(401).json({ message: 'Invalid Credentials' });
-                }
-            })
-            .catch(error => {
-                res.status(500).json({ message: 'Unexpected error' });
-            });
+    if (req.session && req.session.user) {
+        next();
     } else {
-        res.status(400).json({ message: 'No credentials provided' });
+        res.status(401).json({ message: 'Please login first.' });
     }
 } 
 
@@ -58,6 +44,8 @@ router.post('/login', (req,res)=>{
         .first()
         .then(user => {
             if (user && bcrypt.compareSync(password, user.password)) {
+                req.session.user = user;
+
                 // in here with .compare()
                 // change the users-model findBy() to return the password as well
                 res.status(200).json({ message: `Welcome ${user.username}!` });
@@ -72,6 +60,7 @@ router.post('/login', (req,res)=>{
 
 router.get('/users', restricted, (req, res)=>{
     Users.getUsers()
+        .first()
         .then(users => {
             res.status(200).json(users);
         })
@@ -79,6 +68,20 @@ router.get('/users', restricted, (req, res)=>{
             res.status(500).json({ message: 'Failed to get users.' });
         });
 });
+
+router.get('/logout', (req, res) => {
+    if (req.session) {
+        req.session.destroy( err => {
+            if(err) {
+            res.status(500).json({ error: 'error deleting the session' })
+            } else {
+            res.status(200).json({ message: 'logged out' });
+            }
+    });
+    } else {
+        res.status(200).end();
+    }
+})
 
 
 module.exports = router;

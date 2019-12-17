@@ -5,6 +5,8 @@ const configureMiddleware = require('./configure-middleware.js');
 
 const server = express();
 
+
+
 configureMiddleware(server);
 
 server.use('/api', userRouter);
