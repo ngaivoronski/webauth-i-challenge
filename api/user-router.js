@@ -58,7 +58,7 @@ router.post('/login', (req,res)=>{
         });
 });
 
-router.get('/users', restricted, (req, res)=>{
+router.get('/users', (req, res)=>{
     Users.getUsers()
         .first()
         .then(users => {
